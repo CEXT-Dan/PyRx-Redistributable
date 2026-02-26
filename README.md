@@ -1,5 +1,5 @@
 # PyRx-Redistributable
-*Redistributable verson of PyRx (.Bundle)
+(*)Redistributable verson of PyRx (.Bundle)
 
 This is a clean version of [python embedded](https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip) with PIP installed, prepackaged in a AutoCAD .bundle.  
 
@@ -11,4 +11,4 @@ This is a clean version of [python embedded](https://www.python.org/ftp/python/3
 
 see pyrx_embedded.bundle\Contents\README.txt for other commands such as updating PIP
 
-* there can only be one 
+(*) there can only be one 
