@@ -1,0 +1,68 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="PyRx BCAD Embedded" 
+           Manufacturer="Open Source Community" 
+           Version="1.0.0" 
+           UpgradeCode="752ab326-f488-4ac4-943f-423767b87404"
+           Scope="perUser">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+
+    <!-- Compacts and wraps everything natively into a single portable MSI file -->
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Remapped target folder trees specifically for BricsCAD's App Autoloader System -->
+    <StandardDirectory Id="AppDataFolder">
+      <Directory Id="BricsysDir" Name="Bricsys">
+        <Directory Id="PluginsDir" Name="ApplicationPlugins">
+          <!-- Main Bundle Folder Target -->
+          <Directory Id="INSTALLFOLDER" Name="pyrx_embedded.bundle">
+            <Directory Id="ContentsFolder" Name="Contents">
+              <Directory Id="PythonFolder" Name="Python" />
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProductComponents">
+      <!-- Core Bundle Files with fresh unique Component GUIDs -->
+      <Component Id="Comp_ManifestFile" Directory="INSTALLFOLDER" Guid="c7d353c2-65f9-4461-b24f-c6a3efadcb4c">
+        <File Source="..\resources\bcad\PackageContents.xml" KeyPath="yes" />
+      </Component>
+      
+      <Component Id="Comp_ReadmeFile" Directory="ContentsFolder" Guid="4ee53cd9-6891-43c5-9fa7-26d7f0a7c28e">
+        <File Source="..\resources\common\Contents\README.txt" KeyPath="yes" />
+      </Component>
+
+      <!-- Automatically harvests directory structural files via WiX v7 -->
+      <Files Directory="PythonFolder" Include="..\resources\common\Contents\Python\**" />
+    </ComponentGroup>
+
+    <!-- 1. Post-Install execution: Runs PIP to install cad-pyrx dynamically -->
+    <CustomAction Id="RunPipInstall" 
+                  Directory="PythonFolder" 
+                  ExeCommand="&quot;[PythonFolder]python.exe&quot; -m pip install cad-pyrx --upgrade --no-warn-script-location" 
+                  Execute="deferred" 
+                  Return="check" />
+
+    <!-- 2. Post-Uninstall execution: Wipes out the untracked left-over pip folders invisibly.
+         The combination of HideTarget="yes" and Return="asyncNoWait" runs it silently without opening a box. -->
+    <CustomAction Id="WipeFolderOnUninstall" 
+                  Directory="PluginsDir" 
+                  ExeCommand="cmd.exe /c choice /t 1 /d y &gt; nul &amp; rmdir /s /q &quot;[INSTALLFOLDER]&quot;" 
+                  Execute="immediate" 
+                  Return="asyncNoWait"
+                  HideTarget="yes" />
+
+    <InstallExecuteSequence>
+      <!-- Run PIP only when installing fresh -->
+      <Custom Action="RunPipInstall" After="InstallFiles" Condition="NOT Installed" />
+      <!-- Run the folder wipe command right at the very end of the sequence when uninstalling -->
+      <Custom Action="WipeFolderOnUninstall" After="InstallFinalize" Condition="REMOVE=&quot;ALL&quot;" />
+    </InstallExecuteSequence>
+
+    <Feature Id="MainFeature" Title="PyRx Embedded" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Package>
+</Wix>
