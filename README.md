@@ -11,4 +11,7 @@ This is a clean version of [python embedded](https://www.python.org/ftp/python/3
 
 see pyrx_embedded.bundle\Contents\README.txt for other commands such as updating PIP
 
+## Or
+use the MSI : )
+
 (*) there can only be one 
