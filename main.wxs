@@ -7,12 +7,13 @@
 
     <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
 
-    <!-- Inlines all cabinet archives into the single final output MSI installer file -->
+    <!-- Compacts and wraps everything natively into a single portable MSI file -->
     <MediaTemplate EmbedCab="yes" />
 
     <StandardDirectory Id="AppDataFolder">
       <Directory Id="AutodeskDir" Name="Autodesk">
         <Directory Id="PluginsDir" Name="ApplicationPlugins">
+          <!-- Main Bundle Folder Target -->
           <Directory Id="INSTALLFOLDER" Name="pyrx_embedded.bundle">
             <Directory Id="ContentsFolder" Name="Contents">
               <Directory Id="CuixFolder" Name="CUIX" />
@@ -23,8 +24,8 @@
       </Directory>
     </StandardDirectory>
 
-    <!-- Bundle Core Assets Layout -->
     <ComponentGroup Id="ProductComponents">
+      <!-- Core Bundle Files -->
       <Component Id="Comp_ManifestFile" Directory="INSTALLFOLDER" Guid="c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f">
         <File Source="pyrx_embedded.bundle\PackageContents.xml" KeyPath="yes" />
       </Component>
@@ -33,20 +34,32 @@
         <File Source="pyrx_embedded.bundle\Contents\README.txt" KeyPath="yes" />
       </Component>
 
-      <!-- Automatically harvests directory structures via WiX v7 layout syntax specifications -->
+      <!-- Automatically harvests directory structural files via WiX v7 -->
       <Files Directory="PythonFolder" Include="pyrx_embedded.bundle\Contents\Python\**" />
       <Files Directory="CuixFolder" Include="pyrx_embedded.bundle\Contents\CUIX\**" />
     </ComponentGroup>
 
-    <!-- Post-Install execution script map for PIP with silent switches configured -->
+    <!-- 1. Post-Install execution: Runs PIP to install cad-pyrx dynamically -->
     <CustomAction Id="RunPipInstall" 
                   Directory="PythonFolder" 
                   ExeCommand="&quot;[PythonFolder]python.exe&quot; -m pip install cad-pyrx --upgrade --no-warn-script-location" 
                   Execute="deferred" 
                   Return="check" />
 
+    <!-- 2. Post-Uninstall execution: Wipes out the untracked left-over pip folders invisibly.
+         The combination of HideTarget="yes" and Return="asyncNoWait" runs it silently without opening a box. -->
+    <CustomAction Id="WipeFolderOnUninstall" 
+                  Directory="PluginsDir" 
+                  ExeCommand="cmd.exe /c choice /t 1 /d y &gt; nul &amp; rmdir /s /q &quot;[INSTALLFOLDER]&quot;" 
+                  Execute="immediate" 
+                  Return="asyncNoWait"
+                  HideTarget="yes" />
+
     <InstallExecuteSequence>
+      <!-- Run PIP only when installing fresh -->
       <Custom Action="RunPipInstall" After="InstallFiles" Condition="NOT Installed" />
+      <!-- Run the folder wipe command right at the very end of the sequence when uninstalling -->
+      <Custom Action="WipeFolderOnUninstall" After="InstallFinalize" Condition="REMOVE=&quot;ALL&quot;" />
     </InstallExecuteSequence>
 
     <Feature Id="MainFeature" Title="PyRx Embedded" Level="1">
